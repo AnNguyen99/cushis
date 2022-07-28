@@ -1,4 +1,4 @@
-package com.example.lab1;
+package com.viettel.ocs;
 
 
 import javax.servlet.*;

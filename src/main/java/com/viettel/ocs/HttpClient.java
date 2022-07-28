@@ -1,4 +1,4 @@
-package com.example.lab1;
+package com.viettel.ocs;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
