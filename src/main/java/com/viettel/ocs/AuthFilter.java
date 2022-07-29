@@ -1,7 +1,6 @@
 package com.viettel.ocs;
 
 
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -15,9 +14,12 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 @WebFilter("/*")
 public class AuthFilter implements Filter {
+    public static final Logger logger = Logger.getLogger(AuthFilter.class.getName());
+
     public static final String ACCESS_TOKEN = "access_token";
     public static final String URL_SSO_UI = "http://172.20.20.45:82";
     public static final String DEFAULT_URL_API_INFO = "http://172.20.20.45:2022/services/sso/api/auth/info";
@@ -39,34 +41,38 @@ public class AuthFilter implements Filter {
             // redirect sso ui to login
             httpServletResponse.sendRedirect(URL_SSO_UI);
         } else {
-            for (int i = 0; i < cookies.length; i++) {
-                Cookie cookie = cookies[i];
+            String accessToken = "";
+            for (Cookie cookie : cookies) {
                 if (ACCESS_TOKEN.equalsIgnoreCase(cookie.getName())) {
                     // call api get api get user info
-                    String accessToken = cookie.getValue();
-
-                    HttpGet httpGet = new HttpGet(DEFAULT_URL_API_INFO);
-                    // add request headers
-                    httpGet.setHeader("Authorization", "Bearer " + accessToken);
-
-                    try (CloseableHttpResponse closeableHttpResponse = httpClient.execute(httpGet)) {
-                        // Get HttpResponse Status
-                        int httpStatusCode = closeableHttpResponse.getStatusLine().getStatusCode();
-                        if (httpStatusCode == 401) {
-                            httpServletResponse.sendRedirect(URL_SSO_UI);
-                        }
-                        HttpEntity entity = closeableHttpResponse.getEntity();
-                        Header headers = entity.getContentType();
-
-                        if (entity != null) {
-                            // return it as a String
-                            String result = EntityUtils.toString(entity);
-                            System.out.println(result);
-                        }
-                    } catch (Exception exception) {
-                        // call api get user info exception
-                    }
+                    accessToken = cookie.getValue();
                 }
+            }
+
+            // call api
+            if (accessToken.length() != 0) {
+                HttpGet httpGet = new HttpGet(DEFAULT_URL_API_INFO);
+                // add request headers
+                httpGet.setHeader("Authorization", "Bearer " + accessToken);
+
+                try (CloseableHttpResponse closeableHttpResponse = httpClient.execute(httpGet)) {
+                    // Get HttpResponse Status
+                    int httpStatusCode = closeableHttpResponse.getStatusLine().getStatusCode();
+                    if (httpStatusCode == 401) {
+                        httpServletResponse.sendRedirect(URL_SSO_UI);
+                    }
+
+                    HttpEntity entity = closeableHttpResponse.getEntity();
+                    if (entity != null) {
+                        // return it as a String
+                        String result = EntityUtils.toString(entity);
+                        logger.info(result);
+                    }
+                } catch (Exception exception) {
+                    httpServletResponse.sendRedirect(URL_SSO_UI);
+                }
+            } else {
+                httpServletResponse.sendRedirect(URL_SSO_UI);
             }
         }
 
@@ -80,30 +86,6 @@ public class AuthFilter implements Filter {
 
     @Override
     public void destroy() {
-    }
-
-    public void getUserInfo(String url, String accessToken) {
-        HttpGet request = new HttpGet(url);
-        // add request headers
-        request.addHeader("Authorization", "Bearer " + accessToken);
-
-        try (CloseableHttpResponse response = httpClient.execute(request)) {
-
-            // Get HttpResponse Status
-            System.out.println(response.getStatusLine().toString());
-
-            HttpEntity entity = response.getEntity();
-            Header headers = entity.getContentType();
-            System.out.println(headers);
-
-            if (entity != null) {
-                // return it as a String
-                String result = EntityUtils.toString(entity);
-                System.out.println(result);
-            }
-        } catch (Exception exception) {
-            // call api get user info exception
-        }
     }
 
 }
