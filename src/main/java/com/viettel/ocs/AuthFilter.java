@@ -21,8 +21,8 @@ public class AuthFilter implements Filter {
     public static final Logger logger = Logger.getLogger(AuthFilter.class.getName());
 
     public static final String ACCESS_TOKEN = "access_token";
-    public static final String URL_SSO_UI = "http://172.20.20.45:82";
-    public static final String DEFAULT_URL_API_INFO = "http://172.20.20.45:2022/services/sso/api/auth/info";
+    public static final String URL_SSO_UI = "http://172.20.20.46:82"; // thay 172.20.20.46 bằng địa chỉ ip của máy, và 82 là post của sso ui
+    public static final String DEFAULT_URL_API_INFO = "http://172.20.20.46:8180/services/sso/api/auth/info"; // thay 172.20.20.46 bằng địa chỉ ip của máy, và 8180 là port của BE gateway
     private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
     @Override
@@ -35,6 +35,8 @@ public class AuthFilter implements Filter {
 
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
+        // context path để lấy ip của host: httpServletRequest.getContextPath();
+
         Cookie[] cookies = httpServletRequest.getCookies();
 
         if (cookies == null || cookies.length == 0) {
@@ -44,12 +46,12 @@ public class AuthFilter implements Filter {
             String accessToken = "";
             for (Cookie cookie : cookies) {
                 if (ACCESS_TOKEN.equalsIgnoreCase(cookie.getName())) {
-                    // call api get api get user info
+                    // get access token from cookie
                     accessToken = cookie.getValue();
                 }
             }
 
-            // call api
+            // call api get api get user info
             if (accessToken.length() != 0) {
                 HttpGet httpGet = new HttpGet(DEFAULT_URL_API_INFO);
                 // add request headers
